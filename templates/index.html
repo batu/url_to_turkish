@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>YouTube Transcript Translator</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+<body>
+    <div class="container">
+        <h1>YouTube Transcript Translator</h1>
+        <div id="errorMessage" class="error"></div>
+        <form id="translatorForm">
+            <label for="youtube_url">YouTube URL:</label>
+            <input type="text" id="youtube_url" name="youtube_url" required>
+            <div class="checkbox-label">
+                <input type="checkbox" id="repair" name="repair">
+                <label for="repair">Repair transcript using AI</label>
+            </div>
+            <button type="submit">Translate</button>
+        </form>
+        <div id="loading">
+            <p>Processing... Please wait.</p>
+        </div>
+        <div id="statusMessage"></div>
+    </div>
+    <script>
+        document.getElementById('translatorForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const youtubeUrl = document.getElementById('youtube_url').value;
+            const repair = document.getElementById('repair').checked;
+            const loadingDiv = document.getElementById('loading');
+            const statusMessage = document.getElementById('statusMessage');
+            const errorMessage = document.getElementById('errorMessage');
+
+            loadingDiv.style.display = 'block';
+            statusMessage.textContent = '';
+            errorMessage.textContent = '';
+
+            const formData = new FormData();
+            formData.append('youtube_url', youtubeUrl);
+            formData.append('repair', repair);
+
+            fetch('/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = 'none';
+                if (data.status === 'success') {
+                    window.location.href = '/result?text=' + encodeURIComponent(data.translated_text);
+                } else {
+                    errorMessage.textContent = data.message;
+                }
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                errorMessage.textContent = 'An error occurred. Please try again.';
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

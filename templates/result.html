@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Translated Transcript</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+<body>
+    <div class="container">
+        <h1>Translated Transcript</h1>
+        <div id="printable">
+            <textarea id="translated_text" readonly>{{ translated_text }}</textarea>
+        </div>
+        <div class="buttons">
+            <button onclick="copyText()">Copy to Clipboard</button>
+            <form action="/download_pdf" method="post" style="display:inline;">
+                <input type="hidden" name="translated_text" value="{{ translated_text }}">
+                <input type="submit" value="Download as PDF">
+            </form>
+            <button onclick="window.print()">Print</button>
+        </div>
+        <div id="copyMessage"></div>
+    </div>
+    <script>
+        function copyText() {
+            var copyText = document.getElementById("translated_text");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand("copy");
+
+            var copyMessage = document.getElementById("copyMessage");
+            copyMessage.textContent = "Copied the text to clipboard!";
+            setTimeout(function() {
+                copyMessage.textContent = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
