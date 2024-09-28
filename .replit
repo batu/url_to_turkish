@@ -1,0 +1,14 @@
+run = "flask run --host=0.0.0.0 --port=80"
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "flask run --host=0.0.0.0 --port=80"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 80
+externalPort = 80
+exposeLocalhost = false

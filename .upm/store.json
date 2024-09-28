@@ -1,0 +1,1 @@
+{"version":2,"languages":{"python3-pip":{"specfileHash":"329779bd63925f39996e97bb32313802","guessedImports":["langchain","reportlab","Flask","langchain-openai","python-dotenv","youtube-transcript-api"],"guessedImportsHash":"fcc6f85f33c61d88ae7f7d40870a572a"}}}
