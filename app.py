@@ -242,6 +242,9 @@ def process():
 
 def process_video_in_background(job_id, video_id, repair):
     try:
+        # Update job status: Starting transcript fetching
+        jobs[job_id] = {'status': 'in_progress', 'message': 'Fetching transcript...', 'progress': 10}
+
         transcript = get_transcript(video_id)
         if not transcript:
             error = "Could not retrieve transcript for this video."
@@ -249,20 +252,28 @@ def process_video_in_background(job_id, video_id, repair):
             jobs[job_id] = {'status': 'error', 'message': error}
             return
 
+        # Update job status: Transcript fetched
+        jobs[job_id] = {'status': 'in_progress', 'message': 'Transcript fetched. Processing...', 'progress': 30}
+
         with tracing_v2_enabled():
             llm = ChatOpenAI(model_name='gpt-4o-mini', temperature=0.5)
 
             if repair:
                 logging.info("Repairing transcript...")
+                # Update job status
+                jobs[job_id] = {'status': 'in_progress', 'message': 'Repairing transcript...', 'progress': 50}
                 repaired_transcript = repair_transcript(transcript, llm)
             else:
                 repaired_transcript = transcript
+
+            # Update job status
+            jobs[job_id] = {'status': 'in_progress', 'message': 'Translating transcript...', 'progress': 70}
 
             logging.info("Translating transcript...")
             translated_text = translate_to_turkish(repaired_transcript, llm)
 
         logging.info("Processing completed successfully.")
-        # Store the result
+        # Update job status: Completed
         jobs[job_id] = {'status': 'success', 'translated_text': translated_text}
     except Exception as e:
         logging.error(f"An error occurred during processing: {e}")
@@ -284,7 +295,12 @@ def job_status(job_id):
             del jobs[job_id]
             return jsonify({'status': 'error', 'message': message})
         else:
-            return jsonify({'status': 'in_progress'})
+            # Return progress information
+            return jsonify({
+                'status': 'in_progress',
+                'message': job.get('message', 'Processing...'),
+                'progress': job.get('progress', 0)
+            })
     else:
         return jsonify({'status': 'not_found'})
 

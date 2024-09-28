@@ -21,6 +21,9 @@
         </form>
         <div id="loading" style="display: none;">
             <p id="statusMessage">Processing... Please wait.</p>
+            <div id="progressBarContainer" style="width: 100%; background-color: #ccc;">
+                <div id="progressBar" style="width: 0%; height: 20px; background-color: #4caf50;"></div>
+            </div>
         </div>
     </div>
     <script>
@@ -31,11 +34,13 @@
             const loadingDiv = document.getElementById('loading');
             const statusMessage = document.getElementById('statusMessage');
             const errorMessage = document.getElementById('errorMessage');
+            const progressBar = document.getElementById('progressBar');
 
             // Show the loading message
             loadingDiv.style.display = 'block';
             statusMessage.textContent = 'Processing... Please wait.';
             errorMessage.textContent = '';
+            progressBar.style.width = '0%';
 
             const formData = new FormData();
             formData.append('youtube_url', youtubeUrl);
@@ -72,6 +77,7 @@
             const loadingDiv = document.getElementById('loading');
             const statusMessage = document.getElementById('statusMessage');
             const errorMessage = document.getElementById('errorMessage');
+            const progressBar = document.getElementById('progressBar');
 
             fetch('/job_status/' + jobId)
             .then(response => response.json())
@@ -80,8 +86,9 @@
                     // Redirect to the result page when processing is complete
                     window.location.href = '/result';
                 } else if (data.status === 'in_progress') {
-                    // Update the status message and continue polling
-                    statusMessage.textContent = 'Still processing...';
+                    // Update the status message and progress bar
+                    statusMessage.textContent = data.message || 'Processing...';
+                    progressBar.style.width = data.progress + '%';
                     setTimeout(function() {
                         checkJobStatus(jobId);
                     }, 5000); // Poll every 5 seconds
