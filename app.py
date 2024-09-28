@@ -10,10 +10,10 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from urllib.parse import urlparse, parse_qs
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# # Load environment variables from .env file
+# load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -71,7 +71,8 @@ def get_transcript(video_id):
     try:
         logging.info("Fetching transcript...")
         proxy = {'http': proxy_url, 'https': proxy_url}
-        # proxy = None
+        if not os.getenv('PROXY_USERNAME'):
+            proxy = None
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id,
                                                                 proxies=proxy)
         transcript = transcript_list.find_transcript(
