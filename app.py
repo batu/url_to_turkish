@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, render_template, request, send_file, jsonify, redirect, url_for
+from flask import Flask, render_template, request, send_file, jsonify, redirect, url_for, session
 from youtube_transcript_api import YouTubeTranscriptApi
 import io
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -17,6 +17,7 @@ from urllib.parse import urlparse, parse_qs
 
 # Initialize Flask app
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Or use a fixed secret key
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -235,9 +236,11 @@ def process():
             translated_text = translate_to_turkish(repaired_transcript, llm)
 
         logging.info("Processing completed successfully.")
+        # Store the translated text in the session instead of passing it as a URL parameter
+        session['translated_text'] = translated_text
         return jsonify({
             'status': 'success',
-            'translated_text': translated_text
+            'message': 'Translation completed'
         })
 
     except Exception as e:
@@ -250,11 +253,14 @@ def process():
         })
 
 
-@app.route('/result', methods=['GET'])
+@app.route('/result', methods=['GET', 'POST'])
 def result():
-    translated_text = request.args.get('text')
+    # Retrieve the translated text from the session
+    translated_text = session.get('translated_text')
     if not translated_text:
         return redirect(url_for('index'))
+    # Clear the session data after retrieving it
+    session.pop('translated_text', None)
     return render_template('result.html', translated_text=translated_text)
 
 

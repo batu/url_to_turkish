@@ -24,8 +24,8 @@
         <div id="statusMessage"></div>
     </div>
     <script>
-        document.getElementById('translatorForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+        document.getElementById('translatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
             const youtubeUrl = document.getElementById('youtube_url').value;
             const repair = document.getElementById('repair').checked;
             const loadingDiv = document.getElementById('loading');
@@ -46,17 +46,17 @@
             })
             .then(response => response.json())
             .then(data => {
-                loadingDiv.style.display = 'none';
                 if (data.status === 'success') {
-                    window.location.href = '/result?text=' + encodeURIComponent(data.translated_text);
+                    // Redirect to the result page
+                    window.location.href = '/result';
                 } else {
-                    errorMessage.textContent = data.message;
+                    // Handle error
+                    alert(data.message);
                 }
             })
             .catch(error => {
-                loadingDiv.style.display = 'none';
-                errorMessage.textContent = 'An error occurred. Please try again.';
                 console.error('Error:', error);
+                alert('An error occurred. Please try again.');
             });
         });
     </script>
