@@ -71,7 +71,7 @@ def get_transcript(video_id):
     try:
         logging.info("Fetching transcript...")
         proxy = {'http': proxy_url, 'https': proxy_url}
-        if not os.getenv('PROXY_USERNAME'):
+        if not os.getenv('USE_PROXY'):
             proxy = None
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id,
                                                                 proxies=proxy)
