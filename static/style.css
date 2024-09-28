@@ -158,20 +158,53 @@ textarea {
 /* Responsive Design */
 @media (max-width: 600px) {
     .container {
-        padding: 20px;
+        padding: 15px;
+        width: 100%;
     }
 
     h1 {
         font-size: 1.5em;
     }
 
+    input[type="text"], textarea {
+        font-size: 16px; /* Prevents zoom on mobile */
+    }
+
     button, input[type="submit"] {
         width: 100%;
         margin-bottom: 10px;
+        padding: 15px;
     }
 
     .buttons {
         flex-direction: column;
+    }
+
+    .checkbox-label {
+        font-size: 0.9em;
+    }
+
+    textarea {
+        height: 300px; /* Reduced height for mobile */
+    }
+}
+
+/* Additional responsive adjustments */
+@media (max-width: 400px) {
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 1.3em;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    input[type="text"], textarea, button, input[type="submit"] {
+        font-size: 14px;
     }
 }
 
