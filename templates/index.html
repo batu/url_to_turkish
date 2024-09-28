@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>YouTube Transcript Translator</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Transcript Translator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 <body>
     <div class="container">
         <h1>YouTube Transcript Translator</h1>
@@ -19,10 +19,9 @@
             </div>
             <button type="submit">Translate</button>
         </form>
-        <div id="loading">
-            <p>Processing... Please wait.</p>
+        <div id="loading" style="display: none;">
+            <p id="statusMessage">Processing... Please wait.</p>
         </div>
-        <div id="statusMessage"></div>
     </div>
     <script>
         document.getElementById('translatorForm').addEventListener('submit', function(e) {
@@ -33,33 +32,75 @@
             const statusMessage = document.getElementById('statusMessage');
             const errorMessage = document.getElementById('errorMessage');
 
+            // Show the loading message
             loadingDiv.style.display = 'block';
-            statusMessage.textContent = '';
+            statusMessage.textContent = 'Processing... Please wait.';
             errorMessage.textContent = '';
 
             const formData = new FormData();
             formData.append('youtube_url', youtubeUrl);
             formData.append('repair', repair);
 
+            // Send the form data to the server
             fetch('/process', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    // Redirect to the result page
+                if (data.status === 'queued') {
+                    // Start polling for job status
+                    checkJobStatus(data.job_id);
+                } else if (data.status === 'success') {
+                    // If the process completed immediately (unlikely), redirect to result
                     window.location.href = '/result';
                 } else {
-                    // Handle error
-                    alert(data.message);
+                    // Display any error messages
+                    loadingDiv.style.display = 'none';
+                    errorMessage.textContent = data.message || 'An error occurred.';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                loadingDiv.style.display = 'none';
+                errorMessage.textContent = 'An error occurred. Please try again.';
             });
         });
+
+        // Function to poll the server for job status
+        function checkJobStatus(jobId) {
+            const loadingDiv = document.getElementById('loading');
+            const statusMessage = document.getElementById('statusMessage');
+            const errorMessage = document.getElementById('errorMessage');
+
+            fetch('/job_status/' + jobId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'finished') {
+                    // Redirect to the result page when processing is complete
+                    window.location.href = '/result';
+                } else if (data.status === 'in_progress') {
+                    // Update the status message and continue polling
+                    statusMessage.textContent = 'Still processing...';
+                    setTimeout(function() {
+                        checkJobStatus(jobId);
+                    }, 5000); // Poll every 5 seconds
+                } else if (data.status === 'error') {
+                    // Display any error messages
+                    loadingDiv.style.display = 'none';
+                    errorMessage.textContent = data.message || 'An error occurred during processing.';
+                } else {
+                    // Handle unexpected statuses
+                    loadingDiv.style.display = 'none';
+                    errorMessage.textContent = 'Job not found or unknown status.';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingDiv.style.display = 'none';
+                errorMessage.textContent = 'An error occurred. Please try again.';
+            });
+        }
     </script>
 </body>
 </html>

@@ -10,6 +10,13 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from urllib.parse import urlparse, parse_qs
+
+import threading
+import uuid
+
+# A dictionary to store job statuses and results
+jobs = {}
+
 # from dotenv import load_dotenv
 
 # # Load environment variables from .env file
@@ -216,13 +223,32 @@ def process():
             logging.error(error)
             return jsonify({'status': 'error', 'message': error})
 
+        # Generate a unique job ID
+        job_id = str(uuid.uuid4())
+
+        # Start the background thread
+        thread = threading.Thread(target=process_video_in_background, args=(job_id, video_id, repair))
+        thread.start()
+
+        # Return the job ID to the client
+        return jsonify({'status': 'queued', 'job_id': job_id})
+
+    except Exception as e:
+        logging.error(f"An error occurred during processing: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'An error occurred during processing. Please try again.'
+        })
+
+def process_video_in_background(job_id, video_id, repair):
+    try:
         transcript = get_transcript(video_id)
         if not transcript:
             error = "Could not retrieve transcript for this video."
             logging.error(error)
-            return jsonify({'status': 'error', 'message': error})
+            jobs[job_id] = {'status': 'error', 'message': error}
+            return
 
-        # Initialize the LLM with tracing enabled
         with tracing_v2_enabled():
             llm = ChatOpenAI(model_name='gpt-4o-mini', temperature=0.5)
 
@@ -236,21 +262,31 @@ def process():
             translated_text = translate_to_turkish(repaired_transcript, llm)
 
         logging.info("Processing completed successfully.")
-        # Store the translated text in the session instead of passing it as a URL parameter
-        session['translated_text'] = translated_text
-        return jsonify({
-            'status': 'success',
-            'message': 'Translation completed'
-        })
-
+        # Store the result
+        jobs[job_id] = {'status': 'success', 'translated_text': translated_text}
     except Exception as e:
         logging.error(f"An error occurred during processing: {e}")
-        return jsonify({
-            'status':
-            'error',
-            'message':
-            'An error occurred during processing. Please try again.'
-        })
+        jobs[job_id] = {'status': 'error', 'message': str(e)}
+
+@app.route('/job_status/<job_id>', methods=['GET'])
+def job_status(job_id):
+    job = jobs.get(job_id)
+    if job:
+        if job['status'] == 'success':
+            # Store the translated text in the session
+            session['translated_text'] = job['translated_text']
+            # Remove the job from the dictionary
+            del jobs[job_id]
+            return jsonify({'status': 'finished'})
+        elif job['status'] == 'error':
+            message = job.get('message', 'An error occurred.')
+            # Remove the job from the dictionary
+            del jobs[job_id]
+            return jsonify({'status': 'error', 'message': message})
+        else:
+            return jsonify({'status': 'in_progress'})
+    else:
+        return jsonify({'status': 'not_found'})
 
 
 @app.route('/result', methods=['GET', 'POST'])
